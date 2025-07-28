@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Números Impostores - Investidor Anônimo</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      color: #00ffcc;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      width: 300px;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px 5px;
+      background: #00ffcc;
+      color: #000;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #resultado {
+      margin-top: 30px;
+      padding: 20px;
+      background: #222;
+      border-radius: 10px;
+    }
+    .green {
+      color: #00ff00;
+      animation: blink 1s infinite;
+    }
+    .yellow {
+      color: #ffcc00;
+    }
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Números Impostores 🎭</h1>
+  <h3>by Investidor Anônimo 🕵️‍♂️</h3>
+
+  <p>Digite os 12 últimos números da roleta (do mais recente ao mais antigo):</p>
+  <input type="text" id="numeros" placeholder="Ex: 12,19,0,24,1,33,8,15,24,19,5,1" />
+  <br>
+  <button onclick="analisar()">Analisar Tendência</button>
+  <button onclick="limpar()">Nova Análise</button>
+  <button onclick="copiarJogada()">Copiar Jogada</button>
+
+  <div id="resultado"></div>
+
+  <script>
+    let textoCopiado = "";
+
+    function terminalDoNumero(num) {
+      if ([0,10,20,30].includes(num)) return 0;
+      if ([1,11,21,31].includes(num)) return 1;
+      if ([2,12,22,32].includes(num)) return 2;
+      if ([3,13,23,33].includes(num)) return 3;
+      if ([4,14,24,34].includes(num)) return 4;
+      if ([5,15,25,35].includes(num)) return 5;
+      if ([6,16,26,36].includes(num)) return 6;
+      if ([7,17,27].includes(num)) return 7;
+      if ([8,18,28].includes(num)) return 8;
+      if ([9,19,29].includes(num)) return 9;
+      return null;
+    }
+
+    const jogadas = {
+      0: '14, 24, 30, 0 (com 1 vizinho)',
+      1: '22, 1, 11, 21 (com 1 vizinho) 🟢 Cobrir o número Zero',
+      2: '22, 12, 32, 2 (com 1 vizinho)',
+      3: '33, 23, 13, 3 (com 1 vizinho)',
+      4: '14, 24, 34, 4 (com 1 vizinho) 🟢 Cobrir o número Zero',
+      5: '5, 25, 15, 35 (com 1 vizinho)',
+      6: '16, 30, 6, 26 (com 1 vizinho)',
+      7: '27, 7 (com 3 vizinhos) 🟢 Cobrir o número Zero',
+      8: '8, 28 (com 3 vizinhos)',
+      9: '9, 19 (com 3 vizinhos)',
+    };
+
+    function analisar() {
+      const input = document.getElementById("numeros").value.trim();
+      const lista = input.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+      const res = document.getElementById("resultado");
+
+      if (lista.length !== 12) {
+        res.innerHTML = "<p class='yellow'>⚠️ Insira exatamente 12 números separados por vírgula.</p>";
+        return;
+      }
+
+      // Conta terminais
+      const contagem = {};
+      lista.forEach(n => {
+        const t = terminalDoNumero(n);
+        if (t !== null) contagem[t] = (contagem[t] || 0) + 1;
+      });
+
+      // Terminal mais quente (com desempate aleatório)
+      let max = 0;
+      let maisFrequentes = [];
+      for (let [t, count] of Object.entries(contagem)) {
+        if (count > max) {
+          max = count;
+          maisFrequentes = [parseInt(t)];
+        } else if (count === max) {
+          maisFrequentes.push(parseInt(t));
+        }
+      }
+      const terminalMaisFrequente = maisFrequentes[Math.floor(Math.random() * maisFrequentes.length)];
+
+      // Verifica cobertura com 1 vizinho
+      let cobertura = 0;
+      lista.forEach(num => {
+        const t = terminalDoNumero(num);
+        if (t === terminalMaisFrequente) cobertura++;
+        else {
+          const vizinhos = [num - 1, num + 1].map(n => (n + 37) % 37);
+          if (vizinhos.some(v => terminalDoNumero(v) === terminalMaisFrequente)) {
+            cobertura++;
+          }
+        }
+      });
+
+      let status = '';
+      if (cobertura >= 5) {
+        status = `<p class='green'>✅ Tendência confirmada com força!</p>`;
+      } else {
+        status = `<p class='yellow'>⚠️ Tendência parcial — melhor jogada possível liberada com cautela!</p>`;
+      }
+
+      textoCopiado = `🎯 Jogar: ${jogadas[terminalMaisFrequente]} | Terminal ${terminalMaisFrequente}`;
+
+      res.innerHTML = `
+        <p>🔥 Terminal mais quente da sequência:</p>
+        <h2>Terminal ${terminalMaisFrequente}</h2>
+        ${status}
+        <p>🎯 Jogar nos números: ${jogadas[terminalMaisFrequente]}</p>
+        <p>🔁 Se não bater na primeira, aplicar apenas 1 martingale</p>
+        <br>
+        <p><strong>📌 Método Números Impostores | Investidor Anônimo</strong></p>
+        <p>🔞 Jogue com responsabilidade</p>
+      `;
+    }
+
+    function limpar() {
+      document.getElementById("numeros").value = '';
+      document.getElementById("resultado").innerHTML = '';
+      textoCopiado = '';
+    }
+
+    function copiarJogada() {
+      if (textoCopiado === '') {
+        alert("Nenhuma jogada para copiar ainda.");
+        return;
+      }
+      navigator.clipboard.writeText(textoCopiado)
+        .then(() => alert("🎯 Jogada copiada para a área de transferência!"))
+        .catch(() => alert("❌ Não foi possível copiar."))
+    }
+  </script>
+
+</body>
+</html>
